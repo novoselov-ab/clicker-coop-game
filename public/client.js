@@ -177,20 +177,20 @@ function previewInteraction(target, type) {
   const economy = Math.max(selfOutput, targetOutput, 8);
 
   if (type === "cooperate") {
-    const actorGain = Math.max(5, Math.floor(economy * 20 * 0.14));
+    const actorGain = Math.max(3, Math.floor(economy * 20 * 0.07));
     return {
       actorGain,
-      targetGain: Math.floor(actorGain * 1.45),
+      targetGain: actorGain,
       targetLoss: 0,
       actorTrust: 2
     };
   }
 
-  const base = Math.max(5, Math.floor(economy * 20 * 0.18));
+  const base = Math.floor(economy * 20 * 0.22);
   return {
-    actorGain: Math.floor(base * 0.55),
+    actorGain: Math.max(5, Math.floor(base * 0.65)),
     targetGain: 0,
-    targetLoss: base,
+    targetLoss: Math.max(8, base),
     actorTrust: -3
   };
 }

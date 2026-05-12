@@ -19,14 +19,14 @@ const CROPS = [
 const ACTIONS = {
   cooperate: {
     label: "Share Feed",
-    actorMultiplier: 0.14,
-    targetMultiplier: 0.22,
+    actorMultiplier: 0.07,
+    targetMultiplier: 0.07,
     trust: 2,
     message: "shared feed with"
   },
   defect: {
     label: "Raid Silo",
-    actorMultiplier: 0.18,
+    actorMultiplier: 0.22,
     targetMultiplier: -0.34,
     trust: -3,
     message: "raided the silo of"
@@ -192,7 +192,7 @@ function spend(player, amount) {
 
 function interactionValue(actor, target, multiplier) {
   const economy = Math.max(production(actor), production(target), 8);
-  return Math.max(5, Math.floor(economy * 20 * Math.abs(multiplier)));
+  return Math.floor(economy * 20 * Math.abs(multiplier));
 }
 
 function interactionPreview(actor, target, type) {
@@ -200,9 +200,10 @@ function interactionPreview(actor, target, type) {
   const value = interactionValue(actor, target, action.actorMultiplier);
 
   if (type === "cooperate") {
+    const shareGain = Math.max(3, value);
     return {
-      actorGain: value,
-      targetGain: Math.floor(value * 1.45),
+      actorGain: shareGain,
+      targetGain: shareGain,
       targetLoss: 0,
       actorTrust: action.trust,
       targetTrust: 1
@@ -210,9 +211,9 @@ function interactionPreview(actor, target, type) {
   }
 
   return {
-    actorGain: Math.floor(value * 0.55),
+    actorGain: Math.max(5, Math.floor(value * 0.65)),
     targetGain: 0,
-    targetLoss: value,
+    targetLoss: Math.max(8, value),
     actorTrust: action.trust,
     targetTrust: -1
   };
