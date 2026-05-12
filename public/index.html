@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Farm Dilemma</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main id="app">
+      <section id="join" class="join-screen">
+        <form id="joinForm" class="join-panel">
+          <p class="eyebrow">Async farming MMO prototype</p>
+          <h1>Farm Dilemma</h1>
+          <label for="name">Farmer name</label>
+          <div class="join-row">
+            <input id="name" name="name" maxlength="18" autocomplete="nickname" placeholder="Anton" required />
+            <button type="submit">Enter</button>
+          </div>
+          <p id="joinError" class="error" aria-live="polite"></p>
+        </form>
+      </section>
+
+      <section id="game" class="game hidden">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Farm Dilemma</p>
+            <h1 id="farmName">Farm</h1>
+          </div>
+          <div class="stats">
+            <div><span id="grain">0</span><small>grain</small></div>
+            <div><span id="gps">0</span><small>grain/sec</small></div>
+            <div><span id="trust">0</span><small>trust</small></div>
+          </div>
+        </header>
+
+        <section class="layout">
+          <section class="field-panel">
+            <button id="harvest" class="harvest" type="button">
+              <span class="sun">SUN</span>
+              <span>Harvest Field</span>
+              <small>Click for grain</small>
+            </button>
+            <div id="market" class="market"></div>
+          </section>
+
+          <aside class="side-panel">
+            <div class="panel-head">
+              <h2>Farmers</h2>
+              <span id="playerCount">0/0</span>
+            </div>
+            <div id="players" class="players"></div>
+          </aside>
+
+          <aside class="side-panel">
+            <div class="panel-head">
+              <h2>Market Road</h2>
+              <span>live</span>
+            </div>
+            <div id="events" class="events"></div>
+          </aside>
+        </section>
+      </section>
+    </main>
+
+    <div id="notice" class="notice hidden"></div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="client.js"></script>
+  </body>
+</html>
