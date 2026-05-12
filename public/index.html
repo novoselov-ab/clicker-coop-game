@@ -27,6 +27,7 @@
             <div class="stat grain-stat"><span id="grain">0</span><small>grain</small></div>
             <div class="stat"><span id="gps">0</span><small>grain/sec</small></div>
             <div class="stat"><span id="trust">0</span><small>trust | <b id="trustEffect">1.00x output</b></small></div>
+            <div class="stat"><span id="gdp">0</span><small>world GDP | <b id="gdpEffect">1.00x output</b></small></div>
           </div>
           <div class="farm-title">
             <p class="eyebrow">Farm Dilemma</p>
@@ -38,10 +39,10 @@
           <section class="field-panel">
             <button id="harvest" class="harvest" type="button">
               <span class="sun">SUN</span>
-              <span>Harvest Field</span>
-              <small>Click for grain</small>
+              <span class="click-word">CLICK</span>
+              <small>Harvest field for grain</small>
             </button>
-            <div id="clickGate" class="click-gate hidden"></div>
+            <div id="farmView" class="farm-view" aria-label="Farm growth"></div>
             <div id="market" class="market"></div>
           </section>
 

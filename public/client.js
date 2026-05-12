@@ -9,7 +9,7 @@ const market = document.querySelector("#market");
 const players = document.querySelector("#players");
 const events = document.querySelector("#events");
 const notice = document.querySelector("#notice");
-const clickGate = document.querySelector("#clickGate");
+const farmView = document.querySelector("#farmView");
 const floaters = document.querySelector("#floaters");
 
 let state = null;
@@ -61,20 +61,19 @@ function render() {
   document.querySelector("#gps").textContent = fmt(state.self.grainPerSecond);
   document.querySelector("#trust").textContent = signed(state.self.trust);
   document.querySelector("#trustEffect").textContent = `${state.self.trustBoost.toFixed(2)}x output`;
+  document.querySelector("#gdp").textContent = fmt(state.economy.gdp);
+  document.querySelector("#gdpEffect").textContent = `${state.economy.boost.toFixed(2)}x output`;
   document.querySelector("#playerCount").textContent = `${state.players.length}/${state.limits.maxPlayers}`;
+  renderFarm();
   renderMarket();
   renderPlayers();
   renderEvents();
 }
 
 function renderMarket() {
-  const clicksNeeded = Math.max(0, state.limits.minClicksToBuy - state.self.clicks);
-  clickGate.textContent = clicksNeeded > 0 ? `${clicksNeeded} harvest clicks unlock buying` : "";
-  clickGate.classList.toggle("hidden", clicksNeeded === 0);
-
   market.innerHTML = state.market
     .map((crop) => {
-      const disabled = state.self.grain < crop.cost || clicksNeeded > 0 ? "disabled" : "";
+      const disabled = state.self.grain < crop.cost ? "disabled" : "";
       return `
         <button class="crop" type="button" data-crop="${crop.id}" ${disabled}>
           <span class="crop-icon">${crop.icon}</span>
@@ -93,21 +92,47 @@ function renderMarket() {
   });
 }
 
+function renderFarm() {
+  const pieces = [];
+  const order = ["chickens", "cows", "goats", "orchards", "tractors"];
+  const labels = {
+    chickens: "CH",
+    cows: "CW",
+    goats: "GT",
+    orchards: "OR",
+    tractors: "TR"
+  };
+
+  order.forEach((id) => {
+    const owned = state.self.buildings[id] || 0;
+    const visible = Math.min(owned, 10);
+    for (let index = 0; index < visible; index += 1) {
+      pieces.push(`<span class="farm-piece ${id}" style="--i:${pieces.length}">${labels[id]}</span>`);
+    }
+  });
+
+  farmView.innerHTML = pieces.length
+    ? pieces.join("")
+    : `<span class="empty-farm">Buy animals and tools to fill this farm.</span>`;
+}
+
 function renderPlayers() {
   players.innerHTML = state.players
     .map((player, index) => {
       const isSelf = player.id === state.self.id;
       const cooperate = previewInteraction(player, "cooperate");
       const defect = previewInteraction(player, "defect");
+      const shareCooldown = cooldownRemaining(player.id, "cooperate");
+      const raidCooldown = cooldownRemaining(player.id, "defect");
       const controls = isSelf
         ? `<span class="you">you</span>`
         : `
-          <button class="action-card share" type="button" data-action="cooperate" data-id="${player.id}" title="Both farms gain grain. Your trust rises.">
-            <strong>Share</strong>
+          <button class="action-card share" type="button" data-action="cooperate" data-id="${player.id}" ${shareCooldown > 0 ? "disabled" : ""} title="Both farms gain grain. Your trust rises.">
+            <strong>${shareCooldown > 0 ? `Wait ${shareCooldown}s` : "Share"}</strong>
             <small>You +${fmt(cooperate.actorGain)} | Them +${fmt(cooperate.targetGain)} | Trust +${cooperate.actorTrust}</small>
           </button>
-          <button class="action-card raid" type="button" data-action="defect" data-id="${player.id}" title="You gain more grain now. Their grain and your trust drop.">
-            <strong>Raid</strong>
+          <button class="action-card raid" type="button" data-action="defect" data-id="${player.id}" ${raidCooldown > 0 ? "disabled" : ""} title="You steal some grain, but more is destroyed. Their grain and your trust drop.">
+            <strong>${raidCooldown > 0 ? `Wait ${raidCooldown}s` : "Raid"}</strong>
             <small>You +${fmt(defect.actorGain)} | Them -${fmt(defect.targetLoss)} | Trust ${defect.actorTrust}</small>
           </button>
         `;
@@ -137,9 +162,14 @@ function renderPlayers() {
 function renderEvents() {
   events.innerHTML = state.events
     .map((event) => {
-      return `<p><span>${timeAgo(event.at)}</span>${escapeHtml(event.text)}</p>`;
+      return `<p class="${event.type || "neutral"}"><span>${timeAgo(event.at)}</span>${escapeHtml(event.text)}</p>`;
     })
     .join("");
+}
+
+function cooldownRemaining(targetId, type) {
+  const readyAt = state.cooldowns?.[`${targetId}:${type}`] || 0;
+  return Math.max(0, Math.ceil((readyAt - state.serverTime) / 1000));
 }
 
 function previewInteraction(target, type) {
@@ -157,11 +187,11 @@ function previewInteraction(target, type) {
     };
   }
 
-  const actorGain = Math.max(5, Math.floor(economy * 20 * 0.32));
+  const base = Math.max(5, Math.floor(economy * 20 * 0.18));
   return {
-    actorGain,
+    actorGain: Math.floor(base * 0.55),
     targetGain: 0,
-    targetLoss: Math.floor(actorGain * 0.65),
+    targetLoss: base,
     actorTrust: -3
   };
 }

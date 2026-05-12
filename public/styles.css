@@ -147,7 +147,7 @@ input {
 .stats {
   flex: 1;
   display: grid;
-  grid-template-columns: minmax(180px, 1.4fr) repeat(2, minmax(120px, 0.8fr));
+  grid-template-columns: minmax(190px, 1.5fr) repeat(3, minmax(118px, 0.75fr));
   gap: 8px;
 }
 
@@ -238,10 +238,11 @@ small {
   box-shadow: 0 0 0 12px rgba(242, 184, 75, 0.22);
 }
 
-.harvest span:not(.sun) {
+.harvest .click-word {
   display: block;
-  font-size: clamp(2rem, 6vw, 4.5rem);
+  font-size: clamp(4.4rem, 10vw, 8.5rem);
   font-weight: 950;
+  line-height: 0.86;
 }
 
 .harvest small {
@@ -265,14 +266,125 @@ small {
   margin-top: 12px;
 }
 
-.click-gate {
+.farm-view {
+  position: relative;
+  display: grid;
+  min-height: 150px;
   margin-top: 12px;
-  padding: 10px 12px;
-  border: 1px solid var(--sun);
+  overflow: hidden;
+  border: 1px solid #94ad67;
   border-radius: 8px;
-  background: #fff2c9;
+  background:
+    linear-gradient(180deg, rgba(255, 250, 240, 0.26), rgba(255, 250, 240, 0)),
+    repeating-linear-gradient(0deg, #6f8e49 0 24px, #5f7d42 24px 48px);
+  box-shadow: inset 0 -14px 0 rgba(61, 47, 34, 0.12);
+}
+
+.empty-farm {
+  place-self: center;
   color: var(--soil);
-  font-weight: 900;
+  font-weight: 850;
+}
+
+.farm-piece {
+  position: absolute;
+  left: 8%;
+  top: 18%;
+  display: grid;
+  width: 42px;
+  height: 34px;
+  place-items: center;
+  border: 2px solid rgba(61, 47, 34, 0.22);
+  border-radius: 50% 50% 44% 44%;
+  background: #fffaf0;
+  color: var(--soil);
+  box-shadow: 0 5px 0 rgba(61, 47, 34, 0.16);
+  font-size: 0.74rem;
+  font-weight: 950;
+  animation: farm-pop 260ms ease-out both;
+}
+
+.farm-piece:nth-child(2n) {
+  left: 28%;
+  top: 58%;
+}
+
+.farm-piece:nth-child(3n) {
+  left: 48%;
+  top: 30%;
+}
+
+.farm-piece:nth-child(4n) {
+  left: 68%;
+  top: 62%;
+}
+
+.farm-piece:nth-child(5n) {
+  left: 84%;
+  top: 22%;
+}
+
+.farm-piece:nth-child(6n) {
+  left: 14%;
+  top: 68%;
+}
+
+.farm-piece:nth-child(7n) {
+  left: 38%;
+  top: 12%;
+}
+
+.farm-piece:nth-child(8n) {
+  left: 58%;
+  top: 74%;
+}
+
+.farm-piece:nth-child(9n) {
+  left: 76%;
+  top: 42%;
+}
+
+.farm-piece.chickens {
+  width: 31px;
+  height: 27px;
+  background: #fff7d6;
+}
+
+.farm-piece.cows {
+  width: 52px;
+  background: #f1ece2;
+}
+
+.farm-piece.goats {
+  width: 44px;
+  background: #e7e0cd;
+}
+
+.farm-piece.orchards {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #477b3f;
+  color: #fffaf0;
+}
+
+.farm-piece.tractors {
+  width: 58px;
+  height: 36px;
+  border-radius: 7px;
+  background: var(--sun);
+}
+
+@keyframes farm-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.88);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .crop {
@@ -389,6 +501,12 @@ small {
   text-align: left;
 }
 
+.player-actions button:disabled {
+  cursor: not-allowed;
+  filter: grayscale(0.45);
+  opacity: 0.55;
+}
+
 .action-card strong,
 .action-card small {
   display: block;
@@ -420,6 +538,23 @@ small {
   background: white;
   font-size: 0.92rem;
   line-height: 1.35;
+}
+
+.events p.share {
+  border-left-color: var(--leaf);
+  background: #eef7e8;
+}
+
+.events p.raid {
+  border-left-color: var(--danger);
+  background: #fff0eb;
+  color: #5e1f17;
+  font-weight: 800;
+}
+
+.events p.buy {
+  border-left-color: var(--sun);
+  background: #fff7da;
 }
 
 .events span {
@@ -522,6 +657,10 @@ small {
   .layout,
   .market {
     grid-template-columns: 1fr;
+  }
+
+  .farm-view {
+    min-height: 130px;
   }
 
   .harvest {

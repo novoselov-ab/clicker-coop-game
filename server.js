@@ -5,7 +5,6 @@ const { Server } = require("socket.io");
 
 const PORT = Number(process.env.PORT || 3010);
 const MAX_PLAYERS = Number(process.env.MAX_PLAYERS || 40);
-const MIN_CLICKS_TO_BUY = 5;
 
 const CROPS = [
   { id: "chickens", name: "Chickens", icon: "CH", baseCost: 15, baseYield: 0.25 },
@@ -25,8 +24,8 @@ const ACTIONS = {
   },
   defect: {
     label: "Raid Silo",
-    actorMultiplier: 0.32,
-    targetMultiplier: -0.16,
+    actorMultiplier: 0.18,
+    targetMultiplier: -0.34,
     trust: -3,
     message: "raided the silo of"
   }
@@ -59,8 +58,8 @@ function newPlayer(socket, name) {
   const player = {
     id,
     name: safeName,
-    grain: 20,
-    totalEarned: 20,
+    grain: 5,
+    totalEarned: 5,
     trust: 0,
     clicks: 0,
     buildings: Object.fromEntries(CROPS.map((crop) => [crop.id, 0])),
@@ -81,7 +80,9 @@ function publicPlayer(player) {
     grain: Math.floor(player.grain),
     totalEarned: Math.floor(player.totalEarned),
     grainPerSecond: production(player),
+    baseGrainPerSecond: baseProduction(player),
     trustBoost: trustBoost(player),
+    gdpBoost: gdpBoost(),
     trust: player.trust,
     clicks: player.clicks,
     buildings: player.buildings,
@@ -91,14 +92,26 @@ function publicPlayer(player) {
 }
 
 function production(player) {
+  return Number((baseProduction(player) * trustBoost(player) * gdpBoost()).toFixed(2));
+}
+
+function baseProduction(player) {
   const base = CROPS.reduce((sum, crop) => {
     return sum + player.buildings[crop.id] * crop.baseYield;
   }, 0);
-  return Number((base * trustBoost(player)).toFixed(2));
+  return Number(base.toFixed(2));
 }
 
 function trustBoost(player) {
   return Math.max(0.7, 1 + player.trust * 0.015);
+}
+
+function globalGdp() {
+  return Array.from(players.values()).reduce((sum, player) => sum + player.totalEarned, 0);
+}
+
+function gdpBoost() {
+  return Number((1 + Math.min(0.6, Math.log10(Math.max(10, globalGdp())) * 0.045)).toFixed(3));
 }
 
 function cropCost(player, crop) {
@@ -126,12 +139,24 @@ function snapshot(forId) {
     market: requester ? marketFor(requester) : [],
     events: events.slice(0, 12),
     actions: ACTIONS,
-    limits: { maxPlayers: MAX_PLAYERS, minClicksToBuy: MIN_CLICKS_TO_BUY }
+    cooldowns: requester ? cooldownsFor(requester) : {},
+    economy: {
+      gdp: Math.floor(globalGdp()),
+      boost: gdpBoost()
+    },
+    serverTime: now(),
+    limits: { maxPlayers: MAX_PLAYERS }
   };
 }
 
-function pushEvent(text) {
-  events.unshift({ id: `${Date.now()}-${Math.random()}`, text, at: now() });
+function cooldownsFor(player) {
+  return Object.fromEntries(
+    Object.entries(player.cooldowns).filter(([, readyAt]) => readyAt > now())
+  );
+}
+
+function pushEvent(text, type = "neutral") {
+  events.unshift({ id: `${Date.now()}-${Math.random()}`, text, type, at: now() });
   events.splice(24);
 }
 
@@ -171,9 +196,9 @@ function interactionPreview(actor, target, type) {
   }
 
   return {
-    actorGain: value,
+    actorGain: Math.floor(value * 0.55),
     targetGain: 0,
-    targetLoss: Math.floor(value * 0.65),
+    targetLoss: value,
     actorTrust: action.trust,
     targetTrust: -1
   };
@@ -204,16 +229,12 @@ io.on("connection", (socket) => {
     const player = players.get(socket.id);
     const crop = CROPS.find((item) => item.id === cropId);
     if (!player || !crop) return;
-    if (player.clicks < MIN_CLICKS_TO_BUY) {
-      socket.emit("notice", `Harvest ${MIN_CLICKS_TO_BUY - player.clicks} more times before buying.`);
-      return;
-    }
     const cost = cropCost(player, crop);
     if (player.grain < cost) return;
     spend(player, cost);
     player.buildings[crop.id] += 1;
     player.lastSeen = now();
-    pushEvent(`${player.name} bought ${crop.icon} ${crop.name.toLowerCase()}.`);
+    pushEvent(`${player.name} bought ${crop.icon} ${crop.name.toLowerCase()}.`, "buy");
     emitAll();
   });
 
@@ -246,7 +267,8 @@ io.on("connection", (socket) => {
     target.lastSeen = now();
     const targetEffect = type === "cooperate" ? `+${preview.targetGain}` : `-${preview.targetLoss}`;
     pushEvent(
-      `${actor.name} ${action.message} ${target.name}: actor +${preview.actorGain} grain, target ${targetEffect} grain, trust ${action.trust > 0 ? "+" : ""}${action.trust}.`
+      `${actor.name} ${action.message} ${target.name}: actor +${preview.actorGain} grain, target ${targetEffect} grain, trust ${action.trust > 0 ? "+" : ""}${action.trust}.`,
+      type === "cooperate" ? "share" : "raid"
     );
     emitAll();
   });
