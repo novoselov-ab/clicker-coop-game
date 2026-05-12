@@ -291,17 +291,18 @@ small {
   left: 8%;
   top: 18%;
   display: grid;
-  width: 42px;
-  height: 34px;
+  width: 54px;
+  height: 48px;
   place-items: center;
-  border: 2px solid rgba(61, 47, 34, 0.22);
-  border-radius: 50% 50% 44% 44%;
-  background: #fffaf0;
-  color: var(--soil);
-  box-shadow: 0 5px 0 rgba(61, 47, 34, 0.16);
-  font-size: 0.74rem;
-  font-weight: 950;
+  background: transparent;
+  filter: drop-shadow(0 5px 2px rgba(61, 47, 34, 0.2));
   animation: farm-pop 260ms ease-out both;
+}
+
+.farm-piece img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .farm-piece:nth-child(2n) {
@@ -345,34 +346,28 @@ small {
 }
 
 .farm-piece.chickens {
-  width: 31px;
-  height: 27px;
-  background: #fff7d6;
+  width: 38px;
+  height: 38px;
 }
 
 .farm-piece.cows {
-  width: 52px;
-  background: #f1ece2;
+  width: 62px;
+  height: 52px;
 }
 
 .farm-piece.goats {
-  width: 44px;
-  background: #e7e0cd;
+  width: 52px;
+  height: 48px;
 }
 
 .farm-piece.orchards {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: #477b3f;
-  color: #fffaf0;
+  width: 64px;
+  height: 58px;
 }
 
 .farm-piece.tractors {
-  width: 58px;
-  height: 36px;
-  border-radius: 7px;
-  background: var(--sun);
+  width: 72px;
+  height: 54px;
 }
 
 @keyframes farm-pop {
@@ -411,12 +406,18 @@ small {
 
 .crop-icon {
   display: grid;
-  width: 38px;
-  height: 38px;
+  width: 52px;
+  height: 52px;
   place-items: center;
   border-radius: 6px;
   background: #edf2dd;
-  font-size: 1.5rem;
+  overflow: hidden;
+}
+
+.crop-icon img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
 }
 
 .crop strong,

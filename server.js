@@ -9,11 +9,11 @@ const BOT_INTERVAL_MS = 7000;
 const INTERACTION_COOLDOWN_MS = 30_000;
 
 const CROPS = [
-  { id: "chickens", name: "Chickens", icon: "CH", baseCost: 15, baseYield: 0.25 },
-  { id: "cows", name: "Cows", icon: "CW", baseCost: 120, baseYield: 2 },
-  { id: "goats", name: "Goats", icon: "GT", baseCost: 750, baseYield: 9 },
-  { id: "orchards", name: "Orchards", icon: "OR", baseCost: 3800, baseYield: 42 },
-  { id: "tractors", name: "Tractors", icon: "TR", baseCost: 18000, baseYield: 190 }
+  { id: "chickens", name: "Chickens", icon: "CH", asset: "/assets/icons/chickens.png", baseCost: 15, baseYield: 0.25 },
+  { id: "cows", name: "Cows", icon: "CW", asset: "/assets/icons/cows.png", baseCost: 120, baseYield: 2 },
+  { id: "goats", name: "Goats", icon: "GT", asset: "/assets/icons/goats.png", baseCost: 750, baseYield: 9 },
+  { id: "orchards", name: "Orchards", icon: "OR", asset: "/assets/icons/orchards.png", baseCost: 3800, baseYield: 42 },
+  { id: "tractors", name: "Tractors", icon: "TR", asset: "/assets/icons/tractors.png", baseCost: 18000, baseYield: 190 }
 ];
 
 const ACTIONS = {
@@ -324,7 +324,7 @@ function botBuy(bot) {
   spend(bot, cost);
   bot.buildings[crop.id] += 1;
   bot.lastSeen = now();
-  pushEvent(`${bot.name} bought ${crop.icon} ${crop.name.toLowerCase()}.`, "buy");
+  pushEvent(`${bot.name} bought ${crop.name.toLowerCase()}.`, "buy");
 }
 
 function chooseBotTarget(bot) {
@@ -383,7 +383,7 @@ io.on("connection", (socket) => {
     spend(player, cost);
     player.buildings[crop.id] += 1;
     player.lastSeen = now();
-    pushEvent(`${player.name} bought ${crop.icon} ${crop.name.toLowerCase()}.`, "buy");
+    pushEvent(`${player.name} bought ${crop.name.toLowerCase()}.`, "buy");
     emitAll();
   });
 

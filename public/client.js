@@ -76,7 +76,7 @@ function renderMarket() {
       const disabled = state.self.grain < crop.cost ? "disabled" : "";
       return `
         <button class="crop" type="button" data-crop="${crop.id}" ${disabled}>
-          <span class="crop-icon">${crop.icon}</span>
+          <span class="crop-icon"><img src="${crop.asset}" alt="" loading="lazy" /></span>
           <span>
             <strong>${crop.name}</strong>
             <small>${crop.owned} owned | +${fmt(crop.baseYield)} grain/sec</small>
@@ -96,18 +96,18 @@ function renderFarm() {
   const pieces = [];
   const order = ["chickens", "cows", "goats", "orchards", "tractors"];
   const labels = {
-    chickens: "CH",
-    cows: "CW",
-    goats: "GT",
-    orchards: "OR",
-    tractors: "TR"
+    chickens: "/assets/icons/chickens.png",
+    cows: "/assets/icons/cows.png",
+    goats: "/assets/icons/goats.png",
+    orchards: "/assets/icons/orchards.png",
+    tractors: "/assets/icons/tractors.png"
   };
 
   order.forEach((id) => {
     const owned = state.self.buildings[id] || 0;
     const visible = Math.min(owned, 10);
     for (let index = 0; index < visible; index += 1) {
-      pieces.push(`<span class="farm-piece ${id}" style="--i:${pieces.length}">${labels[id]}</span>`);
+      pieces.push(`<span class="farm-piece ${id}" style="--i:${pieces.length}"><img src="${labels[id]}" alt="" loading="lazy" /></span>`);
     }
   });
 
