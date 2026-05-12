@@ -23,14 +23,14 @@
 
       <section id="game" class="game hidden">
         <header class="topbar">
-          <div>
+          <div class="stats">
+            <div class="stat grain-stat"><span id="grain">0</span><small>grain</small></div>
+            <div class="stat"><span id="gps">0</span><small>grain/sec</small></div>
+            <div class="stat"><span id="trust">0</span><small>trust | <b id="trustEffect">1.00x output</b></small></div>
+          </div>
+          <div class="farm-title">
             <p class="eyebrow">Farm Dilemma</p>
             <h1 id="farmName">Farm</h1>
-          </div>
-          <div class="stats">
-            <div><span id="grain">0</span><small>grain</small></div>
-            <div><span id="gps">0</span><small>grain/sec</small></div>
-            <div><span id="trust">0</span><small>trust</small></div>
           </div>
         </header>
 
@@ -41,6 +41,7 @@
               <span>Harvest Field</span>
               <small>Click for grain</small>
             </button>
+            <div id="clickGate" class="click-gate hidden"></div>
             <div id="market" class="market"></div>
           </section>
 
@@ -64,6 +65,7 @@
     </main>
 
     <div id="notice" class="notice hidden"></div>
+    <div id="floaters" class="floaters" aria-hidden="true"></div>
     <script src="/socket.io/socket.io.js"></script>
     <script src="client.js"></script>
   </body>

@@ -5,6 +5,7 @@ const { Server } = require("socket.io");
 
 const PORT = Number(process.env.PORT || 3010);
 const MAX_PLAYERS = Number(process.env.MAX_PLAYERS || 40);
+const MIN_CLICKS_TO_BUY = 5;
 
 const CROPS = [
   { id: "chickens", name: "Chickens", icon: "CH", baseCost: 15, baseYield: 0.25 },
@@ -80,6 +81,7 @@ function publicPlayer(player) {
     grain: Math.floor(player.grain),
     totalEarned: Math.floor(player.totalEarned),
     grainPerSecond: production(player),
+    trustBoost: trustBoost(player),
     trust: player.trust,
     clicks: player.clicks,
     buildings: player.buildings,
@@ -124,7 +126,7 @@ function snapshot(forId) {
     market: requester ? marketFor(requester) : [],
     events: events.slice(0, 12),
     actions: ACTIONS,
-    limits: { maxPlayers: MAX_PLAYERS }
+    limits: { maxPlayers: MAX_PLAYERS, minClicksToBuy: MIN_CLICKS_TO_BUY }
   };
 }
 
@@ -154,6 +156,29 @@ function interactionValue(actor, target, multiplier) {
   return Math.max(5, Math.floor(economy * 20 * Math.abs(multiplier)));
 }
 
+function interactionPreview(actor, target, type) {
+  const action = ACTIONS[type];
+  const value = interactionValue(actor, target, action.actorMultiplier);
+
+  if (type === "cooperate") {
+    return {
+      actorGain: value,
+      targetGain: Math.floor(value * 1.45),
+      targetLoss: 0,
+      actorTrust: action.trust,
+      targetTrust: 1
+    };
+  }
+
+  return {
+    actorGain: value,
+    targetGain: 0,
+    targetLoss: Math.floor(value * 0.65),
+    actorTrust: action.trust,
+    targetTrust: -1
+  };
+}
+
 io.on("connection", (socket) => {
   socket.on("join", (rawName, ack) => {
     if (players.size >= MAX_PLAYERS) {
@@ -179,6 +204,10 @@ io.on("connection", (socket) => {
     const player = players.get(socket.id);
     const crop = CROPS.find((item) => item.id === cropId);
     if (!player || !crop) return;
+    if (player.clicks < MIN_CLICKS_TO_BUY) {
+      socket.emit("notice", `Harvest ${MIN_CLICKS_TO_BUY - player.clicks} more times before buying.`);
+      return;
+    }
     const cost = cropCost(player, crop);
     if (player.grain < cost) return;
     spend(player, cost);
@@ -201,13 +230,13 @@ io.on("connection", (socket) => {
       return;
     }
 
-    const value = interactionValue(actor, target, action.actorMultiplier);
+    const preview = interactionPreview(actor, target, type);
     if (type === "cooperate") {
-      gain(actor, value);
-      gain(target, Math.floor(value * 1.45));
+      gain(actor, preview.actorGain);
+      gain(target, preview.targetGain);
     } else {
-      gain(actor, value);
-      spend(target, Math.floor(value * 0.65));
+      gain(actor, preview.actorGain);
+      spend(target, preview.targetLoss);
     }
 
     actor.trust += action.trust;
@@ -215,7 +244,10 @@ io.on("connection", (socket) => {
     actor.cooldowns[cooldownKey] = now() + 45_000;
     actor.lastSeen = now();
     target.lastSeen = now();
-    pushEvent(`${actor.name} ${action.message} ${target.name} for ${value} grain.`);
+    const targetEffect = type === "cooperate" ? `+${preview.targetGain}` : `-${preview.targetLoss}`;
+    pushEvent(
+      `${actor.name} ${action.message} ${target.name}: actor +${preview.actorGain} grain, target ${targetEffect} grain, trust ${action.trust > 0 ? "+" : ""}${action.trust}.`
+    );
     emitAll();
   });
 
