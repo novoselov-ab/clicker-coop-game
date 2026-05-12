@@ -122,17 +122,16 @@ function renderPlayers() {
       const isSelf = player.id === state.self.id;
       const cooperate = previewInteraction(player, "cooperate");
       const defect = previewInteraction(player, "defect");
-      const shareCooldown = cooldownRemaining(player.id, "cooperate");
-      const raidCooldown = cooldownRemaining(player.id, "defect");
+      const actionCooldown = interactionCooldownRemaining();
       const controls = isSelf
         ? `<span class="you">you</span>`
         : `
-          <button class="action-card share" type="button" data-action="cooperate" data-id="${player.id}" ${shareCooldown > 0 ? "disabled" : ""} title="Both farms gain grain. Your trust rises.">
-            <strong>${shareCooldown > 0 ? `Wait ${shareCooldown}s` : "Share"}</strong>
+          <button class="action-card share" type="button" data-action="cooperate" data-id="${player.id}" ${actionCooldown > 0 ? "disabled" : ""} title="Both farms gain grain. Your trust rises.">
+            <strong>${actionCooldown > 0 ? `Wait ${actionCooldown}s` : "Share"}</strong>
             <small>You +${fmt(cooperate.actorGain)} | Them +${fmt(cooperate.targetGain)} | Trust +${cooperate.actorTrust}</small>
           </button>
-          <button class="action-card raid" type="button" data-action="defect" data-id="${player.id}" ${raidCooldown > 0 ? "disabled" : ""} title="You steal some grain, but more is destroyed. Their grain and your trust drop.">
-            <strong>${raidCooldown > 0 ? `Wait ${raidCooldown}s` : "Raid"}</strong>
+          <button class="action-card raid" type="button" data-action="defect" data-id="${player.id}" ${actionCooldown > 0 ? "disabled" : ""} title="You steal some grain, but more is destroyed. Their grain and your trust drop.">
+            <strong>${actionCooldown > 0 ? `Wait ${actionCooldown}s` : "Raid"}</strong>
             <small>You +${fmt(defect.actorGain)} | Them -${fmt(defect.targetLoss)} | Trust ${defect.actorTrust}</small>
           </button>
         `;
@@ -167,8 +166,8 @@ function renderEvents() {
     .join("");
 }
 
-function cooldownRemaining(targetId, type) {
-  const readyAt = state.cooldowns?.[`${targetId}:${type}`] || 0;
+function interactionCooldownRemaining() {
+  const readyAt = state.interactionReadyAt || 0;
   return Math.max(0, Math.ceil((readyAt - state.serverTime) / 1000));
 }
 

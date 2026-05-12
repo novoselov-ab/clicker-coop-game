@@ -6,6 +6,7 @@ const { Server } = require("socket.io");
 const PORT = Number(process.env.PORT || 3010);
 const MAX_PLAYERS = Number(process.env.MAX_PLAYERS || 40);
 const BOT_INTERVAL_MS = 7000;
+const INTERACTION_COOLDOWN_MS = 30_000;
 
 const CROPS = [
   { id: "chickens", name: "Chickens", icon: "CH", baseCost: 15, baseYield: 0.25 },
@@ -73,12 +74,12 @@ function createPlayer(id, name, options = {}) {
   const player = {
     id,
     name,
-    grain: options.grain ?? 5,
-    totalEarned: options.totalEarned ?? 5,
+    grain: options.grain ?? 0,
+    totalEarned: options.totalEarned ?? 0,
     trust: 0,
     clicks: 0,
     buildings: Object.fromEntries(CROPS.map((crop) => [crop.id, 0])),
-    cooldowns: {},
+    interactionReadyAt: 0,
     memory: {},
     lastAction: null,
     bot: Boolean(options.bot),
@@ -158,7 +159,7 @@ function snapshot(forId) {
     market: requester ? marketFor(requester) : [],
     events: events.slice(0, 12),
     actions: ACTIONS,
-    cooldowns: requester ? cooldownsFor(requester) : {},
+    interactionReadyAt: requester ? requester.interactionReadyAt : 0,
     economy: {
       gdp: Math.floor(globalGdp()),
       boost: gdpBoost()
@@ -166,12 +167,6 @@ function snapshot(forId) {
     serverTime: now(),
     limits: { maxPlayers: MAX_PLAYERS }
   };
-}
-
-function cooldownsFor(player) {
-  return Object.fromEntries(
-    Object.entries(player.cooldowns).filter(([, readyAt]) => readyAt > now())
-  );
 }
 
 function pushEvent(text, type = "neutral") {
@@ -229,8 +224,7 @@ function performInteraction(actor, target, type) {
     return { ok: false, error: "invalid" };
   }
 
-  const cooldownKey = `${target.id}:${type}`;
-  const readyAt = actor.cooldowns[cooldownKey] || 0;
+  const readyAt = actor.interactionReadyAt || 0;
   if (readyAt > now()) {
     return { ok: false, error: "cooldown", readyAt };
   }
@@ -246,7 +240,7 @@ function performInteraction(actor, target, type) {
 
   actor.trust += action.trust;
   target.trust += type === "cooperate" ? 1 : -1;
-  actor.cooldowns[cooldownKey] = now() + 45_000;
+  actor.interactionReadyAt = now() + INTERACTION_COOLDOWN_MS;
   actor.lastSeen = now();
   target.lastSeen = now();
   rememberInteraction(actor, target, type);
