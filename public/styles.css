@@ -486,6 +486,19 @@ small {
   white-space: nowrap;
 }
 
+.bot-badge {
+  display: inline-block;
+  margin-left: 5px;
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: var(--soil);
+  color: white;
+  font-size: 0.62rem;
+  font-style: normal;
+  font-weight: 950;
+  vertical-align: middle;
+}
+
 .player-actions {
   grid-column: 2;
   display: grid;

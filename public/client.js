@@ -140,7 +140,7 @@ function renderPlayers() {
         <article class="player ${isSelf ? "self" : ""}">
           <div class="rank">${index + 1}</div>
           <div>
-            <strong>${escapeHtml(player.name)}</strong>
+            <strong>${escapeHtml(player.name)}${player.bot ? ` <em class="bot-badge">BOT</em>` : ""}</strong>
             <small>${fmt(player.grain)} grain | ${fmt(player.grainPerSecond)}/sec | trust ${signed(player.trust)}</small>
           </div>
           <div class="player-actions">${controls}</div>

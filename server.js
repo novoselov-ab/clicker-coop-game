@@ -5,6 +5,7 @@ const { Server } = require("socket.io");
 
 const PORT = Number(process.env.PORT || 3010);
 const MAX_PLAYERS = Number(process.env.MAX_PLAYERS || 40);
+const BOT_INTERVAL_MS = 7000;
 
 const CROPS = [
   { id: "chickens", name: "Chickens", icon: "CH", baseCost: 15, baseYield: 0.25 },
@@ -41,6 +42,15 @@ const players = new Map();
 const sockets = new Map();
 const events = [];
 
+const BOTS = [
+  { id: "bot-tit-for-tat", name: "Tit-for-Tat Bot", strategy: "titForTat" },
+  { id: "bot-copycat", name: "Copycat Bot", strategy: "copycat" },
+  { id: "bot-grudger", name: "Grudger Bot", strategy: "grudger" },
+  { id: "bot-cooperator", name: "Always Share Bot", strategy: "alwaysShare" },
+  { id: "bot-defector", name: "Always Raid Bot", strategy: "alwaysRaid" },
+  { id: "bot-random", name: "Random Bot", strategy: "random" }
+];
+
 function now() {
   return Date.now();
 }
@@ -53,23 +63,30 @@ function cleanName(name) {
 }
 
 function newPlayer(socket, name) {
-  const id = socket.id;
-  const safeName = cleanName(name) || `Farmer ${id.slice(0, 4)}`;
+  const player = createPlayer(socket.id, cleanName(name) || `Farmer ${socket.id.slice(0, 4)}`);
+  sockets.set(socket.id, socket);
+  pushEvent(`${player.name} opened a fresh farm.`);
+  return player;
+}
+
+function createPlayer(id, name, options = {}) {
   const player = {
     id,
-    name: safeName,
-    grain: 5,
-    totalEarned: 5,
+    name,
+    grain: options.grain ?? 5,
+    totalEarned: options.totalEarned ?? 5,
     trust: 0,
     clicks: 0,
     buildings: Object.fromEntries(CROPS.map((crop) => [crop.id, 0])),
     cooldowns: {},
+    memory: {},
+    lastAction: null,
+    bot: Boolean(options.bot),
+    strategy: options.strategy || null,
     joinedAt: now(),
     lastSeen: now()
   };
   players.set(id, player);
-  sockets.set(id, socket);
-  pushEvent(`${safeName} opened a fresh farm.`);
   return player;
 }
 
@@ -86,6 +103,8 @@ function publicPlayer(player) {
     trust: player.trust,
     clicks: player.clicks,
     buildings: player.buildings,
+    bot: player.bot,
+    strategy: player.strategy,
     joinedAt: player.joinedAt,
     lastSeen: player.lastSeen
   };
@@ -204,6 +223,141 @@ function interactionPreview(actor, target, type) {
   };
 }
 
+function performInteraction(actor, target, type) {
+  const action = ACTIONS[type];
+  if (!actor || !target || !action || actor.id === target.id) {
+    return { ok: false, error: "invalid" };
+  }
+
+  const cooldownKey = `${target.id}:${type}`;
+  const readyAt = actor.cooldowns[cooldownKey] || 0;
+  if (readyAt > now()) {
+    return { ok: false, error: "cooldown", readyAt };
+  }
+
+  const preview = interactionPreview(actor, target, type);
+  if (type === "cooperate") {
+    gain(actor, preview.actorGain);
+    gain(target, preview.targetGain);
+  } else {
+    gain(actor, preview.actorGain);
+    spend(target, preview.targetLoss);
+  }
+
+  actor.trust += action.trust;
+  target.trust += type === "cooperate" ? 1 : -1;
+  actor.cooldowns[cooldownKey] = now() + 45_000;
+  actor.lastSeen = now();
+  target.lastSeen = now();
+  rememberInteraction(actor, target, type);
+
+  const targetEffect = type === "cooperate" ? `+${preview.targetGain}` : `-${preview.targetLoss}`;
+  pushEvent(
+    `${actor.name} ${action.message} ${target.name}: actor +${preview.actorGain} grain, target ${targetEffect} grain, trust ${action.trust > 0 ? "+" : ""}${action.trust}.`,
+    type === "cooperate" ? "share" : "raid"
+  );
+
+  return { ok: true };
+}
+
+function memoryFor(player, otherId) {
+  player.memory[otherId] ||= {
+    lastActionToTarget: null,
+    lastActionFromTarget: null,
+    wasRaided: false
+  };
+  return player.memory[otherId];
+}
+
+function rememberInteraction(actor, target, type) {
+  actor.lastAction = type;
+  const actorMemory = memoryFor(actor, target.id);
+  actorMemory.lastActionToTarget = type;
+
+  const targetMemory = memoryFor(target, actor.id);
+  targetMemory.lastActionFromTarget = type;
+  if (type === "defect") {
+    targetMemory.wasRaided = true;
+  }
+}
+
+function seedBots() {
+  for (const bot of BOTS) {
+    if (players.has(bot.id)) continue;
+    createPlayer(bot.id, bot.name, {
+      bot: true,
+      strategy: bot.strategy,
+      grain: 20,
+      totalEarned: 20
+    });
+  }
+  pushEvent("Strategy bots entered the market road.", "neutral");
+}
+
+function runBots() {
+  let changed = false;
+  for (const bot of Array.from(players.values()).filter((player) => player.bot)) {
+    botHarvest(bot);
+    botBuy(bot);
+    changed = true;
+    const target = chooseBotTarget(bot);
+    if (!target) continue;
+
+    const type = chooseBotAction(bot, target);
+    const result = performInteraction(bot, target, type);
+    changed ||= result.ok;
+  }
+
+  if (changed) emitAll();
+}
+
+function botHarvest(bot) {
+  const clicks = 2 + Math.floor(Math.random() * 4);
+  const amount = (1 + Math.floor(Math.max(0, bot.trust) / 12)) * clicks;
+  bot.clicks += clicks;
+  bot.lastSeen = now();
+  gain(bot, amount);
+}
+
+function botBuy(bot) {
+  const affordable = CROPS.map((crop) => ({ crop, cost: cropCost(bot, crop) }))
+    .filter((item) => bot.grain >= item.cost)
+    .sort((a, b) => b.cost - a.cost);
+
+  if (!affordable.length) return;
+  const { crop, cost } = affordable[0];
+  spend(bot, cost);
+  bot.buildings[crop.id] += 1;
+  bot.lastSeen = now();
+  pushEvent(`${bot.name} bought ${crop.icon} ${crop.name.toLowerCase()}.`, "buy");
+}
+
+function chooseBotTarget(bot) {
+  const candidates = Array.from(players.values()).filter((player) => player.id !== bot.id);
+  if (!candidates.length) return null;
+  return candidates[Math.floor(Math.random() * candidates.length)];
+}
+
+function chooseBotAction(bot, target) {
+  const memory = memoryFor(bot, target.id);
+
+  switch (bot.strategy) {
+    case "titForTat":
+      return memory.lastActionFromTarget === "defect" ? "defect" : "cooperate";
+    case "copycat":
+      return target.lastAction || "cooperate";
+    case "grudger":
+      return memory.wasRaided ? "defect" : "cooperate";
+    case "alwaysRaid":
+      return "defect";
+    case "random":
+      return Math.random() < 0.5 ? "cooperate" : "defect";
+    case "alwaysShare":
+    default:
+      return "cooperate";
+  }
+}
+
 io.on("connection", (socket) => {
   socket.on("join", (rawName, ack) => {
     if (players.size >= MAX_PLAYERS) {
@@ -241,36 +395,13 @@ io.on("connection", (socket) => {
   socket.on("interact", ({ targetId, type }) => {
     const actor = players.get(socket.id);
     const target = players.get(targetId);
-    const action = ACTIONS[type];
-    if (!actor || !target || !action || actor.id === target.id) return;
-
-    const cooldownKey = `${target.id}:${type}`;
-    const readyAt = actor.cooldowns[cooldownKey] || 0;
-    if (readyAt > now()) {
-      socket.emit("notice", `That action is cooling down for ${Math.ceil((readyAt - now()) / 1000)}s.`);
+    const result = performInteraction(actor, target, type);
+    if (!result.ok && result.error === "cooldown") {
+      socket.emit("notice", `That action is cooling down for ${Math.ceil((result.readyAt - now()) / 1000)}s.`);
       return;
     }
 
-    const preview = interactionPreview(actor, target, type);
-    if (type === "cooperate") {
-      gain(actor, preview.actorGain);
-      gain(target, preview.targetGain);
-    } else {
-      gain(actor, preview.actorGain);
-      spend(target, preview.targetLoss);
-    }
-
-    actor.trust += action.trust;
-    target.trust += type === "cooperate" ? 1 : -1;
-    actor.cooldowns[cooldownKey] = now() + 45_000;
-    actor.lastSeen = now();
-    target.lastSeen = now();
-    const targetEffect = type === "cooperate" ? `+${preview.targetGain}` : `-${preview.targetLoss}`;
-    pushEvent(
-      `${actor.name} ${action.message} ${target.name}: actor +${preview.actorGain} grain, target ${targetEffect} grain, trust ${action.trust > 0 ? "+" : ""}${action.trust}.`,
-      type === "cooperate" ? "share" : "raid"
-    );
-    emitAll();
+    if (result.ok) emitAll();
   });
 
   socket.on("disconnect", () => {
@@ -290,6 +421,9 @@ setInterval(() => {
   }
   emitAll();
 }, 1000);
+
+seedBots();
+setInterval(runBots, BOT_INTERVAL_MS);
 
 server.listen(PORT, "0.0.0.0", () => {
   console.log(`Farm Dilemma running on http://0.0.0.0:${PORT}`);
