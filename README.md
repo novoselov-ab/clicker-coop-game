@@ -23,3 +23,16 @@ Environment knobs:
 ```bash
 PORT=3010 MAX_PLAYERS=40 npm start
 ```
+
+## VM deployment
+
+This VM runs the app with a user-level systemd service:
+
+```bash
+cp deploy/farm-dilemma.service ~/.config/systemd/user/farm-dilemma.service
+systemctl --user daemon-reload
+systemctl --user enable --now farm-dilemma.service
+loginctl enable-linger anton
+```
+
+Caddy proxies `https://vm.catfloof.org/` to `127.0.0.1:3010` from the existing website container.

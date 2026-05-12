@@ -1,3 +1,4 @@
 node_modules/
 .env
+farm-dilemma.log
 npm-debug.log*

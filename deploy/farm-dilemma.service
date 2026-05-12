@@ -1,0 +1,15 @@
+[Unit]
+Description=Farm Dilemma browser game
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/anton/apps/clicker-coop-game
+Environment=PORT=3010
+Environment=MAX_PLAYERS=40
+ExecStart=/usr/bin/node /home/anton/apps/clicker-coop-game/server.js
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=default.target
