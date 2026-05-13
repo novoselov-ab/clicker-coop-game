@@ -504,14 +504,14 @@ small {
   grid-column: 2;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 4px;
+  gap: 5px;
   align-items: center;
 }
 
 .player-actions button {
   min-width: 0;
-  min-height: 30px;
-  padding: 4px 6px;
+  min-height: 38px;
+  padding: 5px 7px;
   text-align: left;
 }
 
@@ -529,13 +529,13 @@ small {
 .action-card small {
   margin-top: 1px;
   color: rgba(255, 255, 255, 0.86);
-  font-size: 0.62rem;
-  line-height: 1.05;
+  font-size: 0.66rem;
+  line-height: 1.12;
   white-space: normal;
 }
 
 .action-card strong {
-  font-size: 0.78rem;
+  font-size: 0.84rem;
   line-height: 1;
 }
 

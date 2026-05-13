@@ -152,7 +152,7 @@ function marketFor(player) {
 function snapshot(forId) {
   const requester = players.get(forId);
   const playerList = Array.from(players.values())
-    .sort((a, b) => b.totalEarned - a.totalEarned)
+    .sort((a, b) => production(b) - production(a) || b.grain - a.grain)
     .map(publicPlayer);
 
   return {
