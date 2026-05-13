@@ -7,6 +7,8 @@ const PORT = Number(process.env.PORT || 3010);
 const MAX_PLAYERS = Number(process.env.MAX_PLAYERS || 40);
 const BOT_INTERVAL_MS = 7000;
 const INTERACTION_COOLDOWN_MS = 30_000;
+const INTERACTION_POWER_SECONDS = 120;
+const MIN_INTERACTION_BASIS = 12;
 
 const CROPS = [
   { id: "chickens", name: "Chickens", icon: "CH", asset: "/assets/icons/chickens.png", baseCost: 15, baseYield: 0.25 },
@@ -192,7 +194,9 @@ function spend(player, amount) {
 
 function interactionValue(actor, target, multiplier) {
   const economy = Math.max(production(actor), production(target), 8);
-  return Math.floor(economy * 20 * Math.abs(multiplier));
+  const rawValue = Math.floor(economy * 20 * Math.abs(multiplier));
+  const actorPowerCap = Math.max(MIN_INTERACTION_BASIS, Math.floor(production(actor) * INTERACTION_POWER_SECONDS));
+  return Math.min(rawValue, actorPowerCap);
 }
 
 function interactionPreview(actor, target, type) {

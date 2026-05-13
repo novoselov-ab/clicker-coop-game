@@ -175,9 +175,10 @@ function previewInteraction(target, type) {
   const selfOutput = state.self.grainPerSecond || 0;
   const targetOutput = target.grainPerSecond || 0;
   const economy = Math.max(selfOutput, targetOutput, 8);
+  const powerCap = Math.max(12, Math.floor(selfOutput * 120));
 
   if (type === "cooperate") {
-    const actorGain = Math.max(3, Math.floor(economy * 20 * 0.07));
+    const actorGain = Math.max(3, Math.min(Math.floor(economy * 20 * 0.07), powerCap));
     return {
       actorGain,
       targetGain: actorGain,
@@ -186,7 +187,7 @@ function previewInteraction(target, type) {
     };
   }
 
-  const base = Math.floor(economy * 20 * 0.22);
+  const base = Math.min(Math.floor(economy * 20 * 0.22), powerCap);
   return {
     actorGain: Math.max(5, Math.floor(base * 0.65)),
     targetGain: 0,
