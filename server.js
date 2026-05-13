@@ -46,12 +46,10 @@ const sockets = new Map();
 const events = [];
 
 const BOTS = [
-  { id: "bot-tit-for-tat", name: "Tit-for-Tat Bot", strategy: "titForTat" },
-  { id: "bot-copycat", name: "Copycat Bot", strategy: "copycat" },
-  { id: "bot-grudger", name: "Grudger Bot", strategy: "grudger" },
-  { id: "bot-cooperator", name: "Always Share Bot", strategy: "alwaysShare" },
-  { id: "bot-defector", name: "Always Raid Bot", strategy: "alwaysRaid" },
-  { id: "bot-random", name: "Random Bot", strategy: "random" }
+  { id: "bot-tit-for-tat", name: "Old Neighbor", strategy: "titForTat" },
+  { id: "bot-copycat", name: "Mirror Jack", strategy: "copycat" },
+  { id: "bot-grudger", name: "Long Memory", strategy: "grudger" },
+  { id: "bot-random", name: "Psycho", strategy: "random" }
 ];
 
 function now() {
