@@ -504,14 +504,14 @@ small {
   grid-column: 2;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px;
+  gap: 4px;
   align-items: center;
 }
 
 .player-actions button {
   min-width: 0;
-  min-height: 54px;
-  padding: 7px 8px;
+  min-height: 30px;
+  padding: 4px 6px;
   text-align: left;
 }
 
@@ -527,11 +527,16 @@ small {
 }
 
 .action-card small {
-  margin-top: 2px;
+  margin-top: 1px;
   color: rgba(255, 255, 255, 0.86);
-  font-size: 0.7rem;
-  line-height: 1.2;
+  font-size: 0.62rem;
+  line-height: 1.05;
   white-space: normal;
+}
+
+.action-card strong {
+  font-size: 0.78rem;
+  line-height: 1;
 }
 
 .player-actions .share {

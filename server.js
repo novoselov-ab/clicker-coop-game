@@ -425,5 +425,5 @@ seedBots();
 setInterval(runBots, BOT_INTERVAL_MS);
 
 server.listen(PORT, "0.0.0.0", () => {
-  console.log(`Farm Dilemma running on http://0.0.0.0:${PORT}`);
+  console.log(`Farmer's Dilemma running on http://0.0.0.0:${PORT}`);
 });

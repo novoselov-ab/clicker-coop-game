@@ -1,4 +1,4 @@
-# Farm Dilemma
+# Farmer's Dilemma
 
 Async multiplayer farming clicker prototype.
 
